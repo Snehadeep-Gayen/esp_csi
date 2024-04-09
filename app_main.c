@@ -176,7 +176,9 @@ void* compressor(void*){
         while(compressor_pred == 0)
             pthread_cond_wait(&compressor_condv, &compressor_lock);
         assert(sizeof(arr2) == sizeof(arr3));
+        pthread_mutex_lock(&tcp_lock);
         memcpy(arr3, arr2, sizeof(arr2));
+        pthread_mutex_unlock(&tcp_lock);
         tcp_data = arr3;
         tcp_bytes = sizeof(arr3);
         tcp_pred = 1;
