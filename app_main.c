@@ -40,7 +40,6 @@
 /* C++ includes and changes */
 extern "C" void app_main(void);
 #include <iostream>
-#include <eigen3/Eigen/Eigen>
 #include <cmath>
 #include "esp_heap_caps.h"
 
@@ -125,6 +124,22 @@ static void wifi_csi_rx_cb(void *ctx, wifi_csi_info_t *info)
 static void wifi_csi_init();
 static esp_err_t wifi_ping_router_start();
 
+void* memory_printer(void*){
+    long long int average = 0;
+    long long int count = 0;
+    int heap_size = 0;
+    while(1){
+        count++;
+        heap_size = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+        average = (average*(count-1) + heap_size)/count;
+        if (count % 10 == 0){
+            printf("Heap size: %d, Average: %lld\n", heap_size, average);
+        }
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+    }
+    return NULL;
+}
+
 void app_main()
 {
     ESP_ERROR_CHECK(nvs_flash_init());
@@ -155,18 +170,22 @@ void app_main()
         return;
     }
 
-    struct sockaddr_in dest_addr;
-    inet_pton(AF_INET, ip, &dest_addr.sin_addr);
-    dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port = htons(port);
-    int err = connect(sock, (struct sockaddr *) &dest_addr, sizeof(dest_addr));
-    if(err < 0){
-        printf("Connection failed\n");
-        return;
-    }
-    printf("Connected to %s : %d succesfully\n", ip, port);
-    send(sock, "Hello", 5, 0);
-    close(sock);
+    // struct sockaddr_in dest_addr;
+    // inet_pton(AF_INET, ip, &dest_addr.sin_addr);
+    // dest_addr.sin_family = AF_INET;
+    // dest_addr.sin_port = htons(port);
+    // int err = connect(sock, (struct sockaddr *) &dest_addr, sizeof(dest_addr));
+    // if(err < 0){
+    //     printf("Connection failed\n");
+    //     return;
+    // }
+    // printf("Connected to %s : %d succesfully\n", ip, port);
+    // send(sock, "Hello", 5, 0);
+    // close(sock);
+
+    // release the memory thread
+    pthread_t memory_thread;
+    pthread_create(&memory_thread, NULL, memory_printer, NULL);
 }
 
 /* Trivial Compressor */
