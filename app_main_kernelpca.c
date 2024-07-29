@@ -70,7 +70,7 @@ here                on this
 
 #define NUM_OBS (64) // HOW MANY DATA POINTS TO GROUP?
 #define NUM_VALUES_IN_RAW_CSI (128) // FIXED
-#define NO_COMP (4)
+#define NO_COMP (24)
 #define COMPRESSED_SIZE ((NUM_OBS+NUM_VALUES_IN_RAW_CSI)*NO_COMP+1)
 #define END_PACKET_COUNT (10000)
 
@@ -98,8 +98,8 @@ void* tcp_sender(void*); // called by compressor
 int tcp_uid = 0;
 int tcp_bytes = 0;
 char* tcp_data = NULL;
-char ip[] = "192.168.4.2";
-int port = 8001;
+char ip[] = "192.168.1.106";
+int port = 12345;
 int sock = -1;
 
 void print_heap(){
@@ -107,6 +107,21 @@ void print_heap(){
     heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
     fflush(stdout);
     // heap_caps_dump_all();
+}
+void* memory_printer(void*){
+    long long int average = 0;
+    long long int count = 0;
+    int heap_size = 0;
+    while(1){
+        count++;
+        heap_size = heap_caps_get_free_size(MALLOC_CAP_8BIT);
+        average = (average*(count-1) + heap_size)/count;
+        if (count % 100 == 0){
+            printf("Heap size: %d, Average: %lld\n", heap_size, average);
+        }
+        vTaskDelay(20 / portTICK_PERIOD_MS);
+    }
+    return NULL;
 }
 
 /* VARIABLES RELATED TO CALLBACK */
@@ -173,18 +188,22 @@ void app_main()
         return;
     }
 
-    struct sockaddr_in dest_addr;
-    inet_pton(AF_INET, ip, &dest_addr.sin_addr);
-    dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port = htons(port);
-    int err = connect(sock, (struct sockaddr *) &dest_addr, sizeof(dest_addr));
-    if(err < 0){
-        printf("Connection failed\n");
-        return;
-    }
-    printf("Connected to %s : %d succesfully\n", ip, port);
-    send(sock, "Hello", 5, 0);
-    close(sock);
+    // struct sockaddr_in dest_addr;
+    // inet_pton(AF_INET, ip, &dest_addr.sin_addr);
+    // dest_addr.sin_family = AF_INET;
+    // dest_addr.sin_port = htons(port);
+    // int err = connect(sock, (struct sockaddr *) &dest_addr, sizeof(dest_addr));
+    // if(err < 0){
+    //     printf("Connection failed\n");
+    //     return;
+    // }
+    // printf("Connected to %s : %d succesfully\n", ip, port);
+    // send(sock, "Hello", 5, 0);
+    // close(sock);
+
+    // release the memory thread
+    pthread_t memory_thread;
+    pthread_create(&memory_thread, NULL, memory_printer, NULL);
 }
 
 
